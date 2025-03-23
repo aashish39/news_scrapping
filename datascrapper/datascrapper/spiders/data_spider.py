@@ -1,6 +1,10 @@
 import scrapy
 import json
 import pymongo
+from bs4 import BeautifulSoup
+import requests
+
+
 
 print("Welcome to pyMongo")
 client = pymongo.MongoClient("mongodb://localhost:27017/")
@@ -56,15 +60,35 @@ class DataSpiderSpider(scrapy.Spider):
         #     json.dump(self.dict, file, indent=4)    
                 
     def parse_news_page(self,response):
-        page_link = response.meta.get("page_link")
-        get_data = response.css('div.col-lg-10 p::text').getall()
-        txt = ",".join(get_data)
+        page_link = "https://www.prnewswire.com" + response.meta.get("page_link")
+        response = requests.get(page_link)
+        html_content = response.text
+        soup = BeautifulSoup(html_content, 'html.parser')
+        webpage_text = soup.get_text()
+        cleaned_text = ' '.join(webpage_text.split())  
+        if cleaned_text:
+            dictionary = {'link':page_link,'data':cleaned_text}
+            collection.insert_one(dictionary)
+
+
+        # get_data = response.css('div.col-lg-10 p::text').getall()
+        # txt = ",".join(get_data)
+
+
         # self.dict['links'].append(page_link)
         # self.dict['link_data'].append(txt)
-        dictionary = {'link':page_link,'data':txt}
-        collection.insert_one(dictionary)
+        # dictionary = {'link':page_link,'data':txt}
+        # collection.insert_one(dictionary)
         # with open(self.file_path, "w") as file:
         #     json.dump(self.dict, file, indent=4)    
         # yield{
         #     'link':txt
         # }
+
+    # def get_page_data(link):
+    #     response = requests.get(link)
+    #     html_content = response.text
+    #     soup = BeautifulSoup(html_content, 'html.parser')
+    #     webpage_text = soup.get_text()
+    #     cleaned_text = ' '.join(webpage_text.split())        
+    #     return cleaned_text
